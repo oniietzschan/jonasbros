@@ -1,10 +1,19 @@
 require 'busted'
 
-local Jonas = require 'jonasbros'
+local function length(t)
+  local len = 0
+  for _, _ in pairs(t) do
+    len = len + 1
+  end
+  return len
+end
 
 describe('Jonasbros:', function()
-  -- before_each(function()
-  -- end)
+  local Jonas
+
+  before_each(function()
+    Jonas = require 'jonasbros'()
+  end)
 
   describe('When tweening', function()
     it(':to() should work correctly on 1 entity', function()
@@ -78,6 +87,45 @@ describe('Jonasbros:', function()
       Jonas:update(1)
       assert.same(100, entityA.pos)
       assert.same(100, entityB.pos)
+    end)
+  end)
+
+  describe('Test some internal shit', function()
+    it('entities should be removed from factory once their tweens are done', function()
+      local factory = Jonas
+        :to(2, {pos = 100}, 'linear')
+
+      factory({pos = 0})
+      assert.same(1, length(factory._objects))
+
+      Jonas:update(1)
+      assert.same(1, length(factory._objects))
+
+      factory({pos = 200})
+      assert.same(2, length(factory._objects))
+
+      Jonas:update(1)
+      assert.same(1, length(factory._objects))
+
+      Jonas:update(1)
+      assert.same(0, length(factory._objects))
+    end)
+
+    it('committed factories should be closed and removed from Jonas', function()
+      local factory = Jonas
+        :to(2, {pos = 100}, 'linear')
+      assert.same(1, length(Jonas._factories))
+      assert.same(false, factory._closed)
+
+      factory({pos = 0})
+      factory:commit()
+      Jonas:update(1)
+      assert.same(1, length(Jonas._factories))
+      assert.same(false, factory._closed)
+
+      Jonas:update(1)
+      assert.same(0, length(Jonas._factories))
+      assert.same(true, factory._closed)
     end)
   end)
 end)

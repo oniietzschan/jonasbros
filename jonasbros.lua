@@ -27,8 +27,6 @@ local Jonas = {
   ]]
 }
 
-Jonas._factories = {}
-
 local function assertType(obj, expectedType, name)
   assert(type(expectedType) == 'string' and type(name) == 'string')
   if type(obj) ~= expectedType then
@@ -51,10 +49,16 @@ function Factory:init(timer, duration, goals, ease)
   self._ease = _linearFn
   self._objects = {}
   self._objectCount = 0
+  self._committed = false
+  self._closed = false
   return self
 end
 
 function Factory:__call(object)
+  if self._closed then
+    error('Tried to create new object tween from closed Factory.')
+  end
+
   local t = {
     progress = 0,
     attrs = {}
@@ -67,6 +71,11 @@ function Factory:__call(object)
   end
   self._objects[object] = t
   self._objectCount = self._objectCount + 1
+end
+
+function Factory:commit()
+  self._committed = true
+  return self
 end
 
 function Factory:update(dt)
@@ -85,6 +94,14 @@ function Factory:update(dt)
   end
 end
 
+function Factory:isFinished()
+  return self._committed and self._objectCount == 0
+end
+
+function Factory:close()
+  self._closed = true
+end
+
 local FactoryMT = {
   __index = Factory,
   __call = Factory.__call,
@@ -100,7 +117,20 @@ end
 function Jonas:update(dt)
   for factory, _ in pairs(self._factories) do
     factory:update(dt)
+    if factory:isFinished() then
+      factory:close()
+      self._factories[factory] = nil
+    end
   end
 end
 
-return Jonas
+local JonasMT = {
+  __index = Jonas,
+}
+
+return function()
+  local t = {
+    _factories = {},
+  }
+  return setmetatable(t, JonasMT)
+end
