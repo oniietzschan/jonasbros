@@ -72,10 +72,15 @@ end
 function Factory:update(dt)
   local deltaProgress = (self._rate * dt)
   for object, objData in pairs(self._objects) do
-    objData.progress = objData.progress + deltaProgress
+    objData.progress = math.min(objData.progress + deltaProgress, 1)
     local easedProgress = self._ease(objData.progress)
     for attr, t in pairs(objData.attrs) do
       object[attr] = t.start + (t.diff * easedProgress)
+    end
+    -- Handle when tween is finished.
+    if objData.progress == 1 then
+      self._objects[object] = nil
+      self._objectCount = self._objectCount - 1
     end
   end
 end
@@ -93,12 +98,6 @@ function Jonas:to(...)
 end
 
 function Jonas:update(dt)
-  -- local handles = {}
-  -- local len = 0
-  -- for factory in pairs(self._factories) do
-  --   len = len + 1
-  --   factories[len] = factory
-  -- end
   for factory, _ in pairs(self._factories) do
     factory:update(dt)
   end
