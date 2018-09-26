@@ -10,9 +10,9 @@ local tween = nil
 
 function love.load()
   tween = Jonas
-    :to(1.0, {r = 1, g = 1, b = 0, speed = 0}, 'linear') -- Slow down to speed = 0
-    :to(0.5, {r = 1, g = 0, b = 1, speed = 0}, 'linear') -- Stay at speed = 0
-    :to(2.0, {r = 0, g = 1, b = 1, speed = SECOND_SPEED}) -- Speed up to speed = 10
+    :to(1.0, {r = 1, g = 1, b = 0, speed = 0}, 'linear') -- Color to Yellow,  Slow down to speed = 0
+    :to(0.5, {r = 1, g = 0, b = 1, speed = 0}, 'linear') -- Color to Magenta, Stay at speed = 0
+    :to(2.0, {r = 0, g = 1, b = 1, speed = SECOND_SPEED}, 'linear') -- Color to Teal,    Speed up to speed = SECOND_SPEED
 end
 
 local function fromPolar(angle, len)
