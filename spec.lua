@@ -90,6 +90,25 @@ describe('Jonasbros:', function()
     end)
   end)
 
+  describe('Error checking', function()
+    it('Should error when trying to create factory with invalid tween parameters', function()
+      local expectedError = 'tween goal must be a number, got: doug'
+      assert.has_error(function() Jonas:to(2, {pos = 'doug'}, 'linear') end, expectedError)
+    end)
+
+    it('Should error when trying to add new tween to closed factory.', function()
+      local factory = Jonas
+        :to(2, {pos = 100}, 'linear')
+      factory({pos = 0})
+      factory:commit()
+      factory({pos = 200})
+      Jonas:update(2)
+
+      local expectedError = 'Tried to create new tween from closed Factory.'
+      assert.has_error(function() factory({pos = 50}) end, expectedError)
+    end)
+  end)
+
   describe('Test some internal shit', function()
     it('entities should be removed from factory once their tweens are done', function()
       local factory = Jonas

@@ -56,7 +56,7 @@ end
 
 function Factory:__call(object)
   if self._closed then
-    error('Tried to create new object tween from closed Factory.')
+    error('Tried to create new tween from closed Factory.')
   end
 
   local t = {
