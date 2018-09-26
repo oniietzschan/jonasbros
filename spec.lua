@@ -118,7 +118,10 @@ describe('Jonasbros:', function()
     local function updateAndAssert(expected)
       Jonas:update(updateDeltaTime)
       if assertFloatsEqual(expected, entity.val) == false then
+        -- If tests are passing, then this line isn't reached, so exclude from coverage.
+        -- luacov: disable
         assert.equal(expected, entity.val)
+        -- luacov: enable
       end
     end
 
