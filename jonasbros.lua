@@ -34,10 +34,71 @@ local function assertType(obj, expectedType, name)
   end
 end
 
+Jonas.easing = {
+  linear = function(p) return p end,
+}
+
+do
+  -- This block of code is heavily based on some logic from rxi's flux library.
+  -- https://github.com/rxi/flux
+  -- Copyright © rxi, licensed under the MIT License
+  -- Please do not make a lawsuit onegaishimasu.
+  local easing = {
+    quad    = "p * p",
+    cubic   = "p * p * p",
+    quart   = "p * p * p * p",
+    quint   = "p * p * p * p * p",
+    expo    = "2 ^ (10 * (p - 1))",
+    sine    = "1 - math.cos(p * math.pi / 2)",
+    circ    = "1 - math.sqrt(1 - p * p)",
+    back    = "p * p * (2.70158 * p - 1.70158)",
+    elastic = "-(2 ^ (10 * (p - 1)) * math.sin((p - 1.075) * (math.pi * 2) / .3))",
+    -- Sorry. It's the same as hump.timer's bounce, I swear!
+    bounce = [[math.min(
+      7.5625 * p ^ 2,
+      7.5625 * (p - 1.5   * (1 / 2.75)) ^ 2 + .75,
+      7.5625 * (p - 2.25  * (1 / 2.75)) ^ 2 + .9375,
+      7.5625 * (p - 2.625 * (1 / 2.75)) ^ 2 + .984375
+    )]],
+  }
+  local variations = {
+    ['-in'] = [[
+      return $e
+    ]],
+    ["-out"] = [[
+      p = 1 - p
+      return 1 - ($e)
+    ]],
+    ["-in-out"] = [[
+      p = p * 2
+      if p < 1 then
+        return .5 * ($e)
+      else
+        p = 2 - p
+        return .5 * (1 - ($e)) + .5
+      end
+    ]],
+    ["-out-in"] = [[
+      p = p * 2
+      if p < 1 then
+        p = 1 - p
+        return .5 * (1 - ($e))
+      else
+        p = p - 1
+        return .5 * ($e) + .5
+      end
+    ]],
+  }
+  for k, expr in pairs(easing) do
+    for suffix, template in pairs(variations) do
+      local easingFn = loadstring("return function(p) " .. template:gsub("%$e", expr) .. " end")()
+      Jonas.easing[k .. suffix] = easingFn
+    end
+  end
+end
+
 local Factory = {}
 local FactoryMT
-
-local function _linearFn(p) return p end
 
 function Factory:init(jonas, ...)
   self._jonas = jonas
@@ -49,13 +110,21 @@ function Factory:init(jonas, ...)
 end
 
 function Factory:to(duration, goals, ease)
+  ease = ease or 'linear'
+  assertType(duration, 'number', 'duration')
+  assertType(goals,    'table',  'tween attribute goals')
+  assertType(ease,     'string', 'easing function')
+
   local t = {
     rate = 1 / duration,
     goals = {},
-    ease = _linearFn,
+    ease = Jonas.easing[ease],
     objects = {},
     objectCount = 0,
   }
+  if t.ease == nil then
+    error('Unknown easing function: ' .. ease)
+  end
   for k, v in pairs(goals) do
     assertType(v, 'number', 'tween goal')
     t.goals[k] = v
@@ -81,24 +150,21 @@ function Factory:update(dt)
       tween.objects[object].progress = (remainder * tween.rate) - deltaProgress
       advancing[object] = nil
     end
-    -- process tween.
+    -- Process tween.
     for object, objData in pairs(tween.objects) do
       -- Calculate progress.
-      local progress, remainder = objData.progress + deltaProgress, 0
-      if progress > 1 then
-        remainder = (progress - 1) / tween.rate
-        progress = 1
-      end
+      local progress = objData.progress + deltaProgress, 0
       -- Update attributes
-      local easedProgress = tween.ease(progress)
+      local easedProgress = tween.ease(math.min(1, progress))
       for attr, t in pairs(objData.attrs) do
         object[attr] = t.start + (t.diff * easedProgress)
       end
       -- Handle when tween is finished.
-      if progress == 1 then
+      if progress >= 1 then
         tween.objects[object] = nil
         tween.objectCount = tween.objectCount - 1
-        advancing[object] = remainder
+         -- Store delta-time remainder.
+        advancing[object] = (progress - 1) / tween.rate
       else
         objData.progress = progress
       end

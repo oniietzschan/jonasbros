@@ -8,6 +8,10 @@ local function length(t)
   return len
 end
 
+function assertFloatsEqual(a, b)
+  return math.abs(a - b) < 0.0000000000001
+end
+
 describe('Jonasbros:', function()
   local Jonas
 
@@ -100,6 +104,154 @@ describe('Jonasbros:', function()
     end)
   end)
 
+  describe('When using various easing functions', function()
+    local entity
+    local updateDeltaTime
+
+    local function newFactoryWithEasing(easing)
+      local factory = Jonas
+        :to(1, {val = 1}, easing)
+      entity = {val = 0}
+      factory(entity)
+    end
+
+    local function updateAndAssert(expected)
+      Jonas:update(updateDeltaTime)
+      if assertFloatsEqual(expected, entity.val) == false then
+        assert.equal(expected, entity.val)
+      end
+    end
+
+    before_each(function()
+      entity = nil
+      updateDeltaTime = 0.25
+    end)
+
+    it('linear should work as expected when defaulted to', function()
+      newFactoryWithEasing()
+      updateAndAssert(0.25)
+      updateAndAssert(0.5)
+      updateAndAssert(0.75)
+      updateAndAssert(1)
+    end)
+
+    it('linear should work as expected when specified', function()
+      newFactoryWithEasing('linear')
+      updateAndAssert(0.25)
+      updateAndAssert(0.5)
+      updateAndAssert(0.75)
+      updateAndAssert(1)
+    end)
+
+    it('quad-in should work as expected', function()
+      newFactoryWithEasing('quad-in')
+      updateAndAssert(0.0625)
+      updateAndAssert(0.25)
+      updateAndAssert(0.5625)
+      updateAndAssert(1)
+    end)
+
+    it('quad-out should work as expected', function()
+      newFactoryWithEasing('quad-out')
+      updateAndAssert(0.4375)
+      updateAndAssert(0.75)
+      updateAndAssert(0.9375)
+      updateAndAssert(1)
+    end)
+
+    it('quad-in-out should work as expected', function()
+      newFactoryWithEasing('quad-in-out')
+      updateAndAssert(0.125)
+      updateAndAssert(0.5)
+      updateAndAssert(0.875)
+      updateAndAssert(1)
+    end)
+
+    it('quad-out-in should work as expected', function()
+      newFactoryWithEasing('quad-out-in')
+      -- I wrote *-out-in myself, so give it some extra testing.
+      updateDeltaTime = 0.125
+      updateAndAssert(0.21875)
+      updateAndAssert(0.375)
+      updateAndAssert(0.46875)
+      updateAndAssert(0.5)
+      updateAndAssert(0.53125)
+      updateAndAssert(0.625)
+      updateAndAssert(0.78125)
+      updateAndAssert(1)
+    end)
+
+    it('cubic-in should work as expected', function()
+      newFactoryWithEasing('cubic-in')
+      updateAndAssert(0.015625)
+      updateAndAssert(0.125)
+      updateAndAssert(0.421875)
+      updateAndAssert(1)
+    end)
+
+    it('quart-in should work as expected', function()
+      newFactoryWithEasing('quart-in')
+      updateAndAssert(0.00390625)
+      updateAndAssert(0.0625)
+      updateAndAssert(0.31640625)
+      updateAndAssert(1)
+    end)
+
+    it('quint-in should work as expected', function()
+      newFactoryWithEasing('quint-in')
+      updateAndAssert(0.0009765625)
+      updateAndAssert(0.03125)
+      updateAndAssert(0.2373046875)
+      updateAndAssert(1)
+    end)
+
+    it('sine-in should work as expected', function()
+      newFactoryWithEasing('sine-in')
+      updateAndAssert(0.076120467488713)
+      updateAndAssert(0.29289321881345)
+      updateAndAssert(0.61731656763491)
+      updateAndAssert(1)
+    end)
+
+    it('circ-in should work as expected', function()
+      newFactoryWithEasing('circ-in')
+      updateAndAssert(0.031754163448146)
+      updateAndAssert(0.13397459621556)
+      updateAndAssert(0.33856217223385)
+      updateAndAssert(1)
+    end)
+
+    it('back-in should work as expected', function()
+      newFactoryWithEasing('back-in')
+      updateAndAssert(-0.0641365625)
+      updateAndAssert(-0.0876975)
+      updateAndAssert(0.1825903125)
+      updateAndAssert(1)
+    end)
+
+    it('elastic-in should work as expected', function()
+      newFactoryWithEasing('elastic-in')
+      updateAndAssert(-0.0055242717280199)
+      updateAndAssert(-0.015625)
+      updateAndAssert(0.088388347648318)
+      updateAndAssert(1)
+    end)
+
+    it('bounce-in should work as expected', function()
+      newFactoryWithEasing('bounce-in')
+      -- Bounce is a fucking nightmare, so test more thoroughly.
+      updateDeltaTime = 0.125
+      updateAndAssert(0.1181640625)
+      updateAndAssert(0.47265625)
+      updateAndAssert(0.9697265625)
+      updateAndAssert(0.765625)
+      updateAndAssert(0.7978515625)
+      updateAndAssert(0.97265625)
+      updateAndAssert(0.9619140625)
+      updateAndAssert(1)
+    end)
+  end)
+
   describe('When creating chained tweens', function()
     it(':to() should work correctly on 1 entity', function()
       local factory = Jonas
@@ -159,6 +311,11 @@ describe('Jonasbros:', function()
 
       local expectedError = 'Tried to create new tween from closed Factory.'
       assert.has_error(function() factory({pos = 50}) end, expectedError)
+    end)
+
+    it('Should error when creating tween with made up easing function.', function()
+      local expectedError = 'Unknown easing function: doug-faster-in-out'
+      assert.has_error(function() Jonas:to(2, {pos = 100}, 'doug-faster-in-out') end, expectedError)
     end)
   end)
 
