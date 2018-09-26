@@ -15,9 +15,8 @@ describe('Jonasbros:', function()
     Jonas = require 'jonasbros'()
   end)
 
-  describe('When tweening', function()
+  describe('When creating single tween', function()
     it(':to() should work correctly on 1 entity', function()
-
       local factory = Jonas
         :to(2, {pos = 100}, 'linear')
 
@@ -90,6 +89,48 @@ describe('Jonasbros:', function()
     end)
   end)
 
+  describe('When creating chained tweens', function()
+    it(':to() should work correctly on 1 entity', function()
+      local factory = Jonas
+        :to(2, {pos = 100}, 'linear')
+        :to(1, {pos = 50}, 'linear')
+        :to(4, {pos = 250}, 'linear')
+
+      local entity = {pos = 0}
+      local tweenHandle = factory(entity)
+
+      Jonas:update(1)
+      assert.same(50, entity.pos)
+      Jonas:update(1)
+      assert.same(100, entity.pos)
+      Jonas:update(0.5)
+      assert.same(75, entity.pos)
+      Jonas:update(0.5)
+      assert.same(50, entity.pos)
+      Jonas:update(1)
+      assert.same(100, entity.pos)
+      Jonas:update(1)
+      assert.same(150, entity.pos)
+      Jonas:update(2)
+      assert.same(250, entity.pos)
+      Jonas:update(100)
+      assert.same(250, entity.pos)
+    end)
+
+    it(':to() should work correctly on 1 entity when updated with large value', function()
+      local factory = Jonas
+        :to(2, {pos = 100}, 'linear')
+        :to(1, {pos = 50}, 'linear')
+        :to(4, {pos = 250}, 'linear')
+
+      local entity = {pos = 0}
+      local tweenHandle = factory(entity)
+
+      Jonas:update(7)
+      assert.same(250, entity.pos)
+    end)
+  end)
+
   describe('Error checking', function()
     it('Should error when trying to create factory with invalid tween parameters', function()
       local expectedError = 'tween goal must be a number, got: doug'
@@ -101,6 +142,7 @@ describe('Jonasbros:', function()
         :to(2, {pos = 100}, 'linear')
       factory({pos = 0})
       factory:commit()
+      -- So long as factory is still processing, you can actually still make more tweens. Might be confusing.
       factory({pos = 200})
       Jonas:update(2)
 
@@ -115,22 +157,22 @@ describe('Jonasbros:', function()
         :to(2, {pos = 100}, 'linear')
 
       factory({pos = 0})
-      assert.same(1, length(factory._objects))
+      assert.same(1, length(factory._tweens[1].objects))
 
       Jonas:update(1)
-      assert.same(1, length(factory._objects))
+      assert.same(1, length(factory._tweens[1].objects))
 
       factory({pos = 200})
-      assert.same(2, length(factory._objects))
+      assert.same(2, length(factory._tweens[1].objects))
 
       Jonas:update(1)
-      assert.same(1, length(factory._objects))
+      assert.same(1, length(factory._tweens[1].objects))
 
       Jonas:update(1)
-      assert.same(0, length(factory._objects))
+      assert.same(0, length(factory._tweens[1].objects))
     end)
 
-    it('committed factories should be closed and removed from Jonas', function()
+    it('finished committed factories should be closed and removed from Jonas', function()
       local factory = Jonas
         :to(2, {pos = 100}, 'linear')
       assert.same(1, length(Jonas._factories))
@@ -143,6 +185,24 @@ describe('Jonasbros:', function()
       assert.same(false, factory._closed)
 
       Jonas:update(1)
+      assert.same(0, length(Jonas._factories))
+      assert.same(true, factory._closed)
+    end)
+
+    it('finished committed chained factories should be closed and removed from Jonas', function()
+      local factory = Jonas
+        :to(1, {pos = 100}, 'linear')
+        :to(1, {pos = 200}, 'linear')
+        :to(1, {pos = 300}, 'linear')
+
+      assert.same(1, length(Jonas._factories))
+      assert.same(false, factory._closed)
+
+      factory({pos = 0})
+      factory:commit()
+      Jonas:update(1)
+      Jonas:update(2)
+
       assert.same(0, length(Jonas._factories))
       assert.same(true, factory._closed)
     end)
