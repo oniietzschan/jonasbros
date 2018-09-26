@@ -89,9 +89,9 @@ do
       end
     ]],
   }
+  local loadstring = loadstring or load -- Lua 5.3 support.
   for k, expr in pairs(easing) do
     for suffix, template in pairs(variations) do
-      local loadstring = loadstring or load -- Lua 5.3 support.
       local easingFn = loadstring("return function(p) " .. template:gsub("%$e", expr) .. " end")()
       Jonas.easing[k .. suffix] = easingFn
     end
