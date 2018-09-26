@@ -21,7 +21,7 @@ describe('Jonasbros:', function()
         :to(2, {pos = 100}, 'linear')
 
       local entity = {pos = 0}
-      local tweenHandle = factory(entity)
+      factory(entity)
 
       Jonas:update(0.5)
       assert.same(25, entity.pos)
@@ -38,7 +38,7 @@ describe('Jonasbros:', function()
         :to(2, {pos = 100}, 'linear')
 
       local entity = {pos = 0}
-      local tweenHandle = factory(entity)
+      factory(entity)
 
       Jonas:update(3)
       assert.same(100, entity.pos)
@@ -87,6 +87,17 @@ describe('Jonasbros:', function()
       assert.same(100, entityA.pos)
       assert.same(100, entityB.pos)
     end)
+
+    it(':new(), :to() should work correctly', function()
+      local factory = Jonas:new()
+      factory:to(2, {pos = 100}, 'linear')
+
+      local entity = {pos = 0}
+      factory(entity)
+
+      Jonas:update(2)
+      assert.same(100, entity.pos)
+    end)
   end)
 
   describe('When creating chained tweens', function()
@@ -97,7 +108,7 @@ describe('Jonasbros:', function()
         :to(4, {pos = 250}, 'linear')
 
       local entity = {pos = 0}
-      local tweenHandle = factory(entity)
+      factory(entity)
 
       Jonas:update(1)
       assert.same(50, entity.pos)
@@ -124,7 +135,7 @@ describe('Jonasbros:', function()
         :to(4, {pos = 250}, 'linear')
 
       local entity = {pos = 0}
-      local tweenHandle = factory(entity)
+      factory(entity)
 
       Jonas:update(7)
       assert.same(250, entity.pos)

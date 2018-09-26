@@ -42,13 +42,9 @@ local function _linearFn(p) return p end
 function Factory:init(jonas, ...)
   self._jonas = jonas
   self._jonas:add(self)
-
   self._tweens = {}
-  self:to(...)
-
   self._committed = false
   self._closed = false
-
   return self
 end
 
@@ -150,8 +146,14 @@ FactoryMT = {
 }
 
 function Jonas:to(...)
+  return self
+    :new()
+    :to(...)
+end
+
+function Jonas:new()
   return setmetatable({}, FactoryMT)
-    :init(self, ...)
+    :init(self)
 end
 
 function Jonas:add(factory)
