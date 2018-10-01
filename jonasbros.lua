@@ -115,6 +115,9 @@ function Factory:to(duration, goals, ease)
   assertType(duration, 'number', 'duration')
   assertType(goals,    'table',  'tween attribute goals')
   assertType(ease,     'string', 'easing function')
+  if duration <= 0 then
+    error('duration must be greater than 0, got: ' .. tostring(duration))
+  end
 
   local t = {
     rate = 1 / duration,

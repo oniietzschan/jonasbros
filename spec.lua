@@ -92,6 +92,29 @@ describe('Jonasbros:', function()
       assert.same(100, entityB.pos)
     end)
 
+    -- it(':to() should work even with a duration of 0.', function()
+    --   local factory = Jonas
+    --     :to(0, {pos = 100}, 'linear')
+
+    --   local entity = {pos = 0}
+    --   factory(entity)
+
+    --   Jonas:update(1)
+    --   assert.same(100, entity.pos)
+    -- end)
+
+    -- This corner case is not handled well right now. Will not fix?
+    -- it(':to() should work even with a duration of 0 and when updated with dt = 0.', function()
+    --   local factory = Jonas
+    --     :to(0, {pos = 100}, 'linear')
+
+    --   local entity = {pos = 0}
+    --   factory(entity)
+
+    --   Jonas:update(0)
+    --   assert.same(100, entity.pos)
+    -- end)
+
     it(':new(), :to() should work correctly', function()
       local factory = Jonas:new()
       factory:to(2, {pos = 100}, 'linear')
@@ -295,6 +318,27 @@ describe('Jonasbros:', function()
       Jonas:update(7)
       assert.same(250, entity.pos)
     end)
+
+    -- it(':to() should work even when one has a duration of 0.', function()
+    --   local factory = Jonas
+    --     :to(1, {pos = 100}, 'linear')
+    --     :to(0, {pos = 200}, 'linear')
+    --     :to(1, {pos = 300}, 'linear')
+
+    --   local entityA = {pos = 0}
+    --   factory(entityA)
+    --   Jonas:update(1)
+    --   assert.same(200, entityA.pos)
+    --   Jonas:update(1)
+    --   assert.same(300, entityA.pos)
+
+    --   local entityB = {pos = 0}
+    --   factory(entityB)
+    --   Jonas:update(1.5)
+    --   assert.same(250, entityB.pos)
+    --   Jonas:update(0.5)
+    --   assert.same(300, entityB.pos)
+    -- end)
   end)
 
   describe('Error checking', function()
