@@ -98,6 +98,59 @@ do
   end
 end
 
+
+
+local Pool = {}
+
+function Pool:initialize()
+  self.items = {}
+  self.count = 0
+  self._itemIndexes = {}
+  self._itemCount = 0
+  self._deadIndexes = {}
+  self._deadCount = 0
+end
+
+function Pool:add(item)
+  if self._itemIndexes[item] then
+    error('Already added ' .. tostring(item) .. ' to this pool.')
+  end
+  local freeIndex
+  if self._deadCount == 0 then
+    self._itemCount = self._itemCount + 1
+    freeIndex = self._itemCount
+  else
+    freeIndex = self._deadIndexes[self._deadCount]
+    self._deadIndexes[self._deadCount] = nil
+    self._deadCount = self._deadCount - 1
+  end
+  self.items[freeIndex] = item
+  self._itemIndexes[item] = freeIndex
+  self.count = self.count + 1
+end
+
+function Pool:remove(item)
+  if self._itemIndexes[item] == nil then
+    error(tostring(item) .. ' is not in this pool.')
+  end
+  local id = self._itemIndexes[item]
+  self.items[id] = false
+  self._itemIndexes[item] = nil
+  self._deadCount = self._deadCount + 1
+  self._deadIndexes[self._deadCount] = id
+  self.count = self.count - 1
+end
+
+local PoolMetatable = {__index = Pool}
+
+local function newPool(...)
+  local pool = setmetatable({}, PoolMetatable)
+  pool:initialize(...)
+  return pool
+end
+
+
+
 local Factory = {}
 local FactoryMT
 
@@ -123,8 +176,8 @@ function Factory:to(duration, goals, ease)
     rate = 1 / duration,
     goals = {},
     ease = Jonas.easing[ease],
-    objects = {},
-    objectCount = 0,
+    pool = newPool(),
+    objectData = {},
   }
   if t.ease == nil then
     error('Unknown easing function: ' .. ease)
@@ -151,11 +204,15 @@ function Factory:update(dt)
     -- Add advancing elements
     for object, remainder in pairs(advancing) do
       self:_addToTween(i, object)
-      tween.objects[object].progress = (remainder * tween.rate) - deltaProgress
+      tween.objectData[object].progress = (remainder * tween.rate) - deltaProgress
       advancing[object] = nil
     end
     -- Process tween.
-    for object, objData in pairs(tween.objects) do
+    for _, object in ipairs(tween.pool.items) do repeat
+      if object == false then
+        break -- continue
+      end
+      local objData = tween.objectData[object]
       -- Calculate progress.
       local progress = objData.progress + deltaProgress, 0
       -- Update attributes
@@ -165,14 +222,14 @@ function Factory:update(dt)
       end
       -- Handle when tween is finished.
       if progress >= 1 then
-        tween.objects[object] = nil
-        tween.objectCount = tween.objectCount - 1
+        tween.pool:remove(object)
+        tween.objectData[object] = nil
          -- Store delta-time remainder.
         advancing[object] = (progress - 1) / tween.rate
       else
         objData.progress = progress
       end
-    end
+    until true end
   end
 end
 
@@ -188,8 +245,19 @@ function Factory:_addToTween(i, object)
       diff = goal - object[attr],
     }
   end
-  tween.objects[object] = t
-  tween.objectCount = tween.objectCount + 1
+  tween.pool:add(object)
+  tween.objectData[object] = t
+end
+
+function Factory:cancel(object)
+  for _, tween in ipairs(self._tweens) do
+    if tween.objectData[object] then
+      tween.pool:remove(object)
+      tween.objectData[object] = nil
+      break
+    end
+  end
+  return self
 end
 
 function Factory:commit()
@@ -198,8 +266,11 @@ function Factory:commit()
 end
 
 function Factory:isFinished()
-  for _, c in ipairs(self._tweens) do
-    if c.objectCount >= 1 then
+  if self._committed == false then
+    return false
+  end
+  for _, tween in ipairs(self._tweens) do
+    if tween.pool.count >= 1 then
       return false
     end
   end
@@ -239,6 +310,14 @@ function Jonas:update(dt)
       self._factories[factory] = nil
     end
   end
+end
+
+function Jonas:countFactories()
+  local i = 0
+  for _ in pairs(self._factories) do
+    i = i + 1
+  end
+  return i
 end
 
 local JonasMT = {

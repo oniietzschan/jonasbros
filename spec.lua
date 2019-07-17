@@ -372,19 +372,19 @@ describe('Jonasbros:', function()
         :to(2, {pos = 100}, 'linear')
 
       factory({pos = 0})
-      assert.same(1, length(factory._tweens[1].objects))
+      assert.same(1, factory._tweens[1].pool.count)
 
       Jonas:update(1)
-      assert.same(1, length(factory._tweens[1].objects))
+      assert.same(1, factory._tweens[1].pool.count)
 
       factory({pos = 200})
-      assert.same(2, length(factory._tweens[1].objects))
+      assert.same(2, factory._tweens[1].pool.count)
 
       Jonas:update(1)
-      assert.same(1, length(factory._tweens[1].objects))
+      assert.same(1, factory._tweens[1].pool.count)
 
       Jonas:update(1)
-      assert.same(0, length(factory._tweens[1].objects))
+      assert.same(0, factory._tweens[1].pool.count)
     end)
 
     it('finished committed factories should be closed and removed from Jonas', function()
