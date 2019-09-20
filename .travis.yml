@@ -18,7 +18,7 @@ install:
   - luarocks install luacov
 
 script:
-  - busted --verbose --coverage spec.lua
+  - busted --verbose --coverage
 
 after_success:
   - luacov
