@@ -27,6 +27,9 @@ local Toki = {
   ]],
 }
 
+-- Support Lua 5.3
+local unpack = unpack or table.unpack
+
 local EMPTY_TABLE = {}
 
 local function assertType(obj, expectedType, name)
