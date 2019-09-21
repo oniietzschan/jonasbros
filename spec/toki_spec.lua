@@ -83,6 +83,49 @@ describe('Tokibros:', function()
     end)
   end)
 
+  describe('When :cancel()-ing a timer', function()
+    it(':cancel() should work on a brand new timer', function()
+      local entity = {value = false}
+      local callback = function(obj) obj.value = true end
+      local timer = Toki:after(1, callback, entity)
+
+      Toki:cancel(timer)
+      Toki:update(1)
+      assert.same(false, entity.value)
+    end)
+
+    it(':cancel() should work on an in-progress timer', function()
+      local entityA = {value = false}
+      local entityB = {value = 'first'}
+      local callback = function(obj, newValue) obj.value = newValue end
+      local timerA = Toki:after(2, callback, entity)
+      local timerB = Toki
+        :after(1, callback, entityB, 'second')
+        :after(1, callback, entityB, 'third')
+
+
+      Toki:update(1.5)
+      assert.same(false, entityA.value)
+      assert.same('second', entityB.value)
+      Toki:cancel(timerA)
+      Toki:cancel(timerB)
+      Toki:update(1)
+      assert.same(false, entityA.value)
+      assert.same('second', entityB.value)
+    end)
+
+    it(':cancel() should error on a finished timer', function()
+      local entity = {value = false}
+      local callback = function() end
+      local timer = Toki:after(1, callback)
+
+      Toki:update(1)
+
+      local expectedError = tostring(timer) ..' is not in this pool.'
+      assert.has_error(function() Toki:cancel(timer) end, expectedError)
+    end)
+  end)
+
   describe('Error checking', function()
     it('Should error error when calling :after() with invalid duration', function()
       local expectedError = 'duration must be a number, got: doug'
