@@ -27,6 +27,12 @@ local Toki = {
   ]],
 }
 
+
+
+---------------
+-- UTILITIES --
+---------------
+
 -- Support Lua 5.3
 local unpack = unpack or table.unpack
 
@@ -41,15 +47,16 @@ end
 
 
 
+-----------------
+-- OBJECT POOL --
+-----------------
+
 local Pool = {}
 
-function Pool:initialize()
+function Pool:init()
   self.items = {}
-  self.count = 0
   self._itemIndexes = {}
-  self._itemCount = 0
-  self._deadIndexes = {}
-  self._deadCount = 0
+  self.count = 0
   return self
 end
 
@@ -57,18 +64,9 @@ function Pool:add(item)
   if self._itemIndexes[item] then
     error('Already added ' .. tostring(item) .. ' to this pool.')
   end
-  local freeIndex
-  if self._deadCount == 0 then
-    self._itemCount = self._itemCount + 1
-    freeIndex = self._itemCount
-  else
-    freeIndex = self._deadIndexes[self._deadCount]
-    self._deadIndexes[self._deadCount] = nil
-    self._deadCount = self._deadCount - 1
-  end
-  self.items[freeIndex] = item
-  self._itemIndexes[item] = freeIndex
   self.count = self.count + 1
+  self.items[self.count] = item
+  self._itemIndexes[item] = self.count
 end
 
 function Pool:remove(item)
@@ -76,21 +74,30 @@ function Pool:remove(item)
     error(tostring(item) .. ' is not in this pool.')
   end
   local id = self._itemIndexes[item]
-  self.items[id] = false
+  local replacement = self.items[self.count]
+  self._itemIndexes[replacement] = id
+  self.items[id] = replacement
   self._itemIndexes[item] = nil
-  self._deadCount = self._deadCount + 1
-  self._deadIndexes[self._deadCount] = id
+  self.items[self.count] = nil
   self.count = self.count - 1
+end
+
+function Pool:contains(item)
+  return self._itemIndexes[item] ~= nil
 end
 
 local PoolMetatable = {__index = Pool}
 
 local function newPool()
   return setmetatable({}, PoolMetatable)
-    :initialize()
+    :init()
 end
 
 
+
+-----------
+-- TIMER --
+-----------
 
 local Timer = {}
 
@@ -140,8 +147,13 @@ local TimerMT = {
 
 
 
+----------
+-- TOKI --
+----------
+
 function Toki:_init()
   self._timers = newPool()
+  self._toRemove = {}
   return self
 end
 
@@ -159,15 +171,19 @@ function Toki:_newTimer()
 end
 
 function Toki:update(dt)
-  for _, timer in ipairs(self._timers.items) do repeat
-    if timer == false then
-      break -- continue
-    end
+  for _, timer in ipairs(self._timers.items) do
     timer:update(dt)
     if timer.done then
-      self._timers:remove(timer)
+      table.insert(self._toRemove, timer)
     end
-  until true end
+  end
+  while true do
+    local timer = table.remove(self._toRemove)
+    if timer == nil then
+      break
+    end
+    self._timers:remove(timer)
+  end
 end
 
 function Toki:cancel(timer)
