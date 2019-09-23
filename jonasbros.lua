@@ -102,31 +102,20 @@ end
 
 local Pool = {}
 
-function Pool:initialize()
+function Pool:init()
   self.items = {}
   self.count = 0
   self._itemIndexes = {}
-  self._itemCount = 0
-  self._deadIndexes = {}
-  self._deadCount = 0
+  return self
 end
 
 function Pool:add(item)
   if self._itemIndexes[item] then
     error('Already added ' .. tostring(item) .. ' to this pool.')
   end
-  local freeIndex
-  if self._deadCount == 0 then
-    self._itemCount = self._itemCount + 1
-    freeIndex = self._itemCount
-  else
-    freeIndex = self._deadIndexes[self._deadCount]
-    self._deadIndexes[self._deadCount] = nil
-    self._deadCount = self._deadCount - 1
-  end
-  self.items[freeIndex] = item
-  self._itemIndexes[item] = freeIndex
   self.count = self.count + 1
+  self.items[self.count] = item
+  self._itemIndexes[item] = self.count
 end
 
 function Pool:remove(item)
@@ -134,19 +123,19 @@ function Pool:remove(item)
     error(tostring(item) .. ' is not in this pool.')
   end
   local id = self._itemIndexes[item]
-  self.items[id] = false
+  local replacement = self.items[self.count]
+  self._itemIndexes[replacement] = id
+  self.items[id] = replacement
   self._itemIndexes[item] = nil
-  self._deadCount = self._deadCount + 1
-  self._deadIndexes[self._deadCount] = id
+  self.items[self.count] = nil
   self.count = self.count - 1
 end
 
 local PoolMetatable = {__index = Pool}
 
 local function newPool(...)
-  local pool = setmetatable({}, PoolMetatable)
-  pool:initialize(...)
-  return pool
+  return setmetatable({}, PoolMetatable)
+    :init(...)
 end
 
 
@@ -201,17 +190,16 @@ function Factory:update(dt)
   local advancing = {}
   for i, tween in ipairs(self._tweens) do
     local deltaProgress = (tween.rate * dt)
+
     -- Add advancing elements
     for object, remainder in pairs(advancing) do
       self:_addToTween(i, object)
       tween.objectData[object].progress = (remainder * tween.rate) - deltaProgress
       advancing[object] = nil
     end
+
     -- Process tween.
-    for _, object in ipairs(tween.pool.items) do repeat
-      if object == false then
-        break -- continue
-      end
+    for _, object in ipairs(tween.pool.items) do
       local objData = tween.objectData[object]
       -- Calculate progress.
       local progress = objData.progress + deltaProgress, 0
@@ -222,14 +210,17 @@ function Factory:update(dt)
       end
       -- Handle when tween is finished.
       if progress >= 1 then
-        tween.pool:remove(object)
-        tween.objectData[object] = nil
-         -- Store delta-time remainder.
-        advancing[object] = (progress - 1) / tween.rate
+        advancing[object] = (progress - 1) / tween.rate -- Delta-time remainder.
       else
         objData.progress = progress
       end
-    until true end
+    end
+
+    -- Remove advancing tables from pool
+    for object, _ in pairs(advancing) do
+      tween.pool:remove(object)
+      tween.objectData[object] = nil
+    end
   end
 end
 
