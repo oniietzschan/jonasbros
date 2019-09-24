@@ -61,19 +61,16 @@ function Pool:init()
 end
 
 function Pool:add(item)
-  if self._itemIndexes[item] then
-    error('Already added ' .. tostring(item) .. ' to this pool.')
-  end
   self.count = self.count + 1
   self.items[self.count] = item
   self._itemIndexes[item] = self.count
 end
 
 function Pool:remove(item)
-  if self._itemIndexes[item] == nil then
-    error(tostring(item) .. ' is not in this pool.')
-  end
   local id = self._itemIndexes[item]
+  if id == nil then
+    return
+  end
   local replacement = self.items[self.count]
   self._itemIndexes[replacement] = id
   self.items[id] = replacement
@@ -187,6 +184,9 @@ function Toki:update(dt)
 end
 
 function Toki:cancel(timer)
+  if self._timers:contains(timer) == false then
+    error(tostring(timer) .. ' is not an active timer.')
+  end
   self._timers:remove(timer)
 end
 

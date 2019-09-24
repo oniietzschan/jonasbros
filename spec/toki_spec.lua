@@ -129,14 +129,21 @@ describe('Toki:', function()
     end)
 
     it(':cancel() should error on a finished timer', function()
-      local entity = {value = false}
       local callback = function() end
       local timer = Toki:after(1, callback)
 
       Toki:update(1)
 
-      local expectedError = tostring(timer) ..' is not in this pool.'
+      local expectedError = tostring(timer) ..' is not an active timer.'
       assert.has_error(function() Toki:cancel(timer) end, expectedError)
+    end)
+
+    it(':cancel() should be able to cancel itself during execution', function()
+      local timer
+      local callback = function() Toki:cancel(timer) end
+      timer = Toki:after(1, callback)
+
+      Toki:update(1)
     end)
   end)
 
