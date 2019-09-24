@@ -1,4 +1,4 @@
-describe('Tokibros:', function()
+describe('Toki:', function()
   local Toki
 
   before_each(function()
@@ -80,6 +80,20 @@ describe('Tokibros:', function()
       Toki:after(0, callback, objectB)
       Toki:update(0)
       assert.same(true, objectB.value)
+    end)
+
+    it('new timers should not be updated in the same Toki:update() call which created them', function()
+      local function callback(obj, i)
+        obj.value = i
+        Toki:after(i * 0.1, callback, obj, i + 1)
+      end
+
+      local object = {value = 0}
+      Toki:after(0.1, callback, object, 1)
+      Toki:update(1)
+      assert.same(1, object.value)
+      Toki:update(1)
+      assert.same(2, object.value)
     end)
   end)
 

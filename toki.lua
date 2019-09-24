@@ -153,7 +153,7 @@ local TimerMT = {
 
 function Toki:_init()
   self._timers = newPool()
-  self._toRemove = {}
+  self._toUpdate = {}
   return self
 end
 
@@ -171,18 +171,18 @@ function Toki:_newTimer()
 end
 
 function Toki:update(dt)
-  for _, timer in ipairs(self._timers.items) do
+  -- Clone self._timers.items into self._toUpdate
+  for i, timer in ipairs(self._timers.items) do
+    self._toUpdate[i] = timer
+  end
+  -- Iterate through self._toUpdate backwards, removing as we go
+  for i = #self._toUpdate, 1, -1 do
+    local timer = self._toUpdate[i]
+    self._toUpdate[i] = nil
     timer:update(dt)
     if timer.done then
-      table.insert(self._toRemove, timer)
+      self._timers:remove(timer)
     end
-  end
-  while true do
-    local timer = table.remove(self._toRemove)
-    if timer == nil then
-      break
-    end
-    self._timers:remove(timer)
   end
 end
 
