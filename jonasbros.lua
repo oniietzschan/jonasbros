@@ -187,32 +187,33 @@ function Factory:update(dt)
   local advancing = {}
   for i, tween in ipairs(self._tweens) do
     -- Add advancing elements
-    for object, remainder in pairs(advancing) do
+    for j = #advancing, 1, -1 do
+      local object = advancing[j]
+      local remainder = advancing[object]
       self:_addToTween(i, object)
       tween.objectData[object].progress = remainder
-      advancing[object] = nil
+      advancing[j], advancing[object] = nil, nil
     end
 
     -- Process tween.
     for _, object in ipairs(tween.pool.items) do
       local objData = tween.objectData[object]
       -- Calculate progress.
-      local progress = objData.progress + dt
+      objData.progress = objData.progress + dt
       -- Update attributes
-      local easedProgress = tween.ease(math.min(1, progress / tween.duration))
+      local easedProgress = tween.ease(math.min(1, objData.progress / tween.duration))
       for attr, t in pairs(objData.attrs) do
         object[attr] = t.start + (t.diff * easedProgress)
       end
       -- Handle when tween is finished.
-      if progress >= tween.duration then
-        advancing[object] = progress - tween.duration - dt -- Delta-time remainder.
-      else
-        objData.progress = progress
+      if objData.progress >= tween.duration then
+        table.insert(advancing, object)
+        advancing[object] = objData.progress - tween.duration - dt -- Delta-time remainder.
       end
     end
 
     -- Remove advancing tables from pool
-    for object, _ in pairs(advancing) do
+    for _, object in ipairs(advancing) do
       tween.pool:remove(object)
       tween.objectData[object] = nil
     end
