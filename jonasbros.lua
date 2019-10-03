@@ -143,7 +143,7 @@ end
 local Factory = {}
 local FactoryMT
 
-function Factory:init(jonas, ...)
+function Factory:init(jonas)
   self._jonas = jonas
   self._jonas:add(self)
   self._tweens = {}
@@ -157,12 +157,9 @@ function Factory:to(duration, goals, ease)
   assertType(duration, 'number', 'duration')
   assertType(goals,    'table',  'tween attribute goals')
   assertType(ease,     'string', 'easing function')
-  if duration <= 0 then
-    error('duration must be greater than 0, got: ' .. tostring(duration))
-  end
 
   local t = {
-    rate = 1 / duration,
+    duration = duration,
     goals = {},
     ease = Jonas.easing[ease],
     pool = newPool(),
@@ -189,12 +186,10 @@ end
 function Factory:update(dt)
   local advancing = {}
   for i, tween in ipairs(self._tweens) do
-    local deltaProgress = (tween.rate * dt)
-
     -- Add advancing elements
     for object, remainder in pairs(advancing) do
       self:_addToTween(i, object)
-      tween.objectData[object].progress = (remainder * tween.rate) - deltaProgress
+      tween.objectData[object].progress = remainder
       advancing[object] = nil
     end
 
@@ -202,15 +197,15 @@ function Factory:update(dt)
     for _, object in ipairs(tween.pool.items) do
       local objData = tween.objectData[object]
       -- Calculate progress.
-      local progress = objData.progress + deltaProgress, 0
+      local progress = objData.progress + dt
       -- Update attributes
-      local easedProgress = tween.ease(math.min(1, progress))
+      local easedProgress = tween.ease(math.min(1, progress / tween.duration))
       for attr, t in pairs(objData.attrs) do
         object[attr] = t.start + (t.diff * easedProgress)
       end
       -- Handle when tween is finished.
-      if progress >= 1 then
-        advancing[object] = (progress - 1) / tween.rate -- Delta-time remainder.
+      if progress >= tween.duration then
+        advancing[object] = progress - tween.duration - dt -- Delta-time remainder.
       else
         objData.progress = progress
       end

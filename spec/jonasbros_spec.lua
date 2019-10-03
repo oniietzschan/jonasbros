@@ -319,26 +319,28 @@ describe('Jonasbros:', function()
       assert.same(250, entity.pos)
     end)
 
-    -- it(':to() should work even when one has a duration of 0.', function()
-    --   local factory = Jonas
-    --     :to(1, {pos = 100}, 'linear')
-    --     :to(0, {pos = 200}, 'linear')
-    --     :to(1, {pos = 300}, 'linear')
+    it(':to() should work even when one has a duration of 0.', function()
+      local factory = Jonas
+        :to(1, {pos = 100}, 'linear')
+        :to(0, {pos = 200}, 'linear')
+        :to(1, {pos = 300}, 'linear')
 
-    --   local entityA = {pos = 0}
-    --   factory(entityA)
-    --   Jonas:update(1)
-    --   assert.same(200, entityA.pos)
-    --   Jonas:update(1)
-    --   assert.same(300, entityA.pos)
+      local entityA = {pos = 0}
+      factory(entityA)
+      Jonas:update(0.99)
+      assert.same(99, entityA.pos)
+      Jonas:update(0.01)
+      assert.same(200, entityA.pos)
+      Jonas:update(1)
+      assert.same(300, entityA.pos)
 
-    --   local entityB = {pos = 0}
-    --   factory(entityB)
-    --   Jonas:update(1.5)
-    --   assert.same(250, entityB.pos)
-    --   Jonas:update(0.5)
-    --   assert.same(300, entityB.pos)
-    -- end)
+      local entityB = {pos = 0}
+      factory(entityB)
+      Jonas:update(1.5)
+      assert.same(250, entityB.pos)
+      Jonas:update(0.5)
+      assert.same(300, entityB.pos)
+    end)
   end)
 
   describe('Error checking', function()
