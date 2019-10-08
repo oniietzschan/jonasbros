@@ -201,7 +201,9 @@ function Factory:update(dt)
       -- Calculate progress.
       objData.progress = objData.progress + dt
       -- Update attributes
-      local easedProgress = tween.ease(math.min(1, objData.progress / tween.duration))
+      -- NOTE: math.min arguments should be in this order, because progress / duration might return NaN.
+      --       If NaN is in 2nd argument of math.min, then it will take precedence over 1, which is undesired.
+      local easedProgress = tween.ease(math.min(objData.progress / tween.duration, 1))
       for attr, t in pairs(objData.attrs) do
         object[attr] = t.start + (t.diff * easedProgress)
       end
