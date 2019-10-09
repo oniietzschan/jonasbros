@@ -1,31 +1,33 @@
-local Jonas = {
-  _VERSION     = 'jonasbros v0.0.0',
-  _URL         = 'https://github.com/oniietzschan/jonasbros',
-  _DESCRIPTION = 'A tweening library.',
-  _LICENSE     = [[
-    Massachusecchu... あれっ！ Massachu... chu... chu... License!
+--[[
 
-    Copyright (c) 1789 shru
+jonasbros 0.0.0
+===============
 
-    Permission is hereby granted, free of charge, to any person obtaining a copy
-    of this software and associated documentation files (the "Software"), to deal
-    in the Software without restriction, including without limitation the rights
-    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-    copies of the Software, and to permit persons to whom the Software is
-    furnished to do so, subject to the following conditions:
+A tweening library by shru. (see: https://github.com/oniietzschan/jonasbros)
 
-    The above copyright notice and this permission notice shall be included in all
-    copies or substantial portions of the Software.
+MIT LICENSE
+-----------
 
-    THE SOFTWARE IS PROVIDED 【AS IZ】, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-    SOFTWARE. PLEASE HAVE A FUN AND BE GENTLE WITH THIS SOFTWARE.
-  ]]
-}
+Permission is hereby granted, free of charge, to any person obtaining a
+copy of this software and associated documentation files (the
+"Software"), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+
+The above copyright notice and this permission notice shall be included
+in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+--]]
 
 local function assertType(obj, expectedType, name)
   assert(type(expectedType) == 'string' and type(name) == 'string')
@@ -33,6 +35,8 @@ local function assertType(obj, expectedType, name)
     error(name .. ' must be a ' .. expectedType .. ', got: ' .. tostring(obj), 2)
   end
 end
+
+local Jonas = {}
 
 Jonas.easing = {
   linear = function(p) return p end,
@@ -183,6 +187,15 @@ function Factory:__call(object)
   self:_addToTween(1, object)
 end
 
+local min
+if type(jit) == 'table' then
+   -- Luajit
+  min = math.min
+else
+  -- Mainline Lua: swap arguments of math.min because the behaviour when one arg is NaN is opposite to Luajit.
+  min = function(a, b) return math.min(b, a) end
+end
+
 function Factory:update(dt)
   local advancing = {}
   for i, tween in ipairs(self._tweens) do
@@ -203,7 +216,7 @@ function Factory:update(dt)
       -- Update attributes
       -- NOTE: math.min arguments should be in this order, because progress / duration might return NaN.
       --       If NaN is in 2nd argument of math.min, then it will take precedence over 1, which is undesired.
-      local easedProgress = tween.ease(math.min(objData.progress / tween.duration, 1))
+      local easedProgress = tween.ease(min(objData.progress / tween.duration, 1))
       for attr, t in pairs(objData.attrs) do
         object[attr] = t.start + (t.diff * easedProgress)
       end
