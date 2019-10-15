@@ -138,6 +138,12 @@ function Timer:update(dt)
   end
 end
 
+function Timer:cancel()
+  -- Set duration to math.huge, so that timer will never finish.
+  -- This could matter if a timer is cancelled during Toki:update().
+  self._duration = math.huge
+end
+
 local TimerMT = {
   __index = Timer,
 }
@@ -188,6 +194,7 @@ function Toki:cancel(timer)
     error(tostring(timer) .. ' is not an active timer.')
   end
   self._timers:remove(timer)
+  timer:cancel()
 end
 
 local TokiMT = {

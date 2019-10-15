@@ -145,6 +145,26 @@ describe('Toki:', function()
 
       Toki:update(1)
     end)
+
+    it(':cancel() should work even if timer would be updated during the Toki:update() call which cancelled it.', function()
+      local entity = {wasChanged = false}
+      local toCancel
+      local alreadyCancelled = false
+      local doCancelFn = function()
+        if alreadyCancelled then
+          return
+        end
+        Toki:cancel(toCancel)
+        alreadyCancelled = true
+      end
+      -- Attempt to make this test more resiliant by putting cancel both before and after toCancel is created.
+      Toki:after(1, doCancelFn)
+      toCancel = Toki:after(1, function() entity.wasChanged = true end)
+      Toki:after(1, doCancelFn)
+
+      Toki:update(1)
+      assert.same(false, entity.wasChanged)
+    end)
   end)
 
   describe('Error checking', function()
